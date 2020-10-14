@@ -74,7 +74,6 @@ See the `docker-compose.yml` file in this repository for a sample
 `pg-event-proxy /path/to/config.ini` (the executable is not available in this repository, see [subzero.cloud](https://subzero.cloud) )
 
 ## Sending messages
-firstValue
 A message can be sent either by running a query like `NOTIFY pgchannel1, 'My message'` or by simply running an `INSERT/UPDATE/DELETE` query if you configured WAL streaming by using `wal2json` as the name of the channel. 
 
 When using using amqp or mqtt as upstreams it's possible to specify the routing key/topic for the message.
