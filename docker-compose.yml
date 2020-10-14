@@ -1,0 +1,78 @@
+version: '2'
+services:
+  # pg-event-proxy instance is responsible for forwarding NOTIFY or WAL events in PostgreSQL
+  # to and upstream server, current supported upstream protocols are
+  # amqp 0.9 (RabbitMQ)
+  # mqtt (Apache ActiveMQ, Cassandana, HiveMQ, Mosquitto, RabbitMQ, AWS IoT, Amazon MQ, ...)
+  # redis
+  pg_event_proxy:
+    image: subzerocloud/pg-event-proxy-development
+    # for production use the image below (you'll need a 'On Premise' subscription)
+    # image: registry.subzero.cloud/pg-event-proxy
+    links:
+      - postgres
+      - rabbitmq
+      - redis
+      - mosquitto
+    environment:
+      - RUST_LOG=pg_event_proxy=debug # output forwarded messages, use "info" for production
+      - PGPROXY_LOCAL-POSTGRESQL_URI=postgres://user:pass@postgres:5432/app
+      # these configurations are only used when streaming WAL, the example below are the default values, uncomment only if you need to change them
+      # - PGPROXY_LOCAL-REPLICATION_SLOT=pg_event_proxy 
+      # - PGPROXY_LOCAL-WAL2JSON_PARAMS=\"format-version\" '2' , \"include-types\" '0'
+
+
+      # format of "BRIDGE_CHANNELS" config is as follows
+      # pgchannel1->exchange:topic_exchange_name, pgchannel2->queue:queue_name, pgchannel3->topic:topic_name
+      # "wal2json" has a special meaning when used as a value for pgchannel
+      # in this case the replication events (WAL) will be streamed (as oposed to events from NOTIFY wal2json, ... query)
+      # for example "wal2json->exchange:amqp.topic" will stream WAL to "amqp.topic" exchange
+      # when streaming WAL, the database user needs to have REPLICATION privilege
+      
+
+      # Configuration for RabbitMQ upstream
+      - PGPROXY_LOCAL-UPSTREAM=amqp
+      - PGPROXY_LOCAL-UPSTREAM_CONFIG-URI=amqp://user:pass@rabbitmq//
+      - PGPROXY_LOCAL-UPSTREAM_CONFIG-BRIDGE_CHANNELS=events->exchange:amq.topic, wal2json->exchange:amq.topic
+      - PGPROXY_LOCAL-UPSTREAM_CONFIG-DELIVERY_MODE=1 # message delivery mode, 1 = non-persistent, 2 = persistent
+
+      # Configuration for Redis upstream
+      # - PGPROXY_LOCAL-UPSTREAM=redis
+      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-URI=redis://redis:6379
+      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-BRIDGE_CHANNELS=events->topic:events, wal2json->topic:wal
+
+      # Configuration for Mqtt upstream
+      # - PGPROXY_LOCAL-UPSTREAM=mqtt
+      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-URI=tcp://mosquitto:1883
+      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-BRIDGE_CHANNELS=events->topic:events, wal2json->topic:wal
+      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-USERNAME=username
+      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-PASSWORD=password
+      
+
+  postgres:
+    image: subzerocloud/postgres_with_wal2json:12
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=app
+    volumes:
+      - "./postgres:/docker-entrypoint-initdb.d"
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=pass
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+  mosquitto:
+    image: eclipse-mosquitto
+    ports:
+      - "1883:1883"
+      - "9001:9001"
