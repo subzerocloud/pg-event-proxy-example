@@ -88,6 +88,25 @@ To make it bit more user friendly it's recommended to use [events](postgres/1_ev
 select events.send_message('pgchannel1', 'My message', 'routing-key', true)
 ```
 
+## See it in action
+Open `docker-compose.yml` file and uncomment the desired upstream (by default it's configured to send events to RabbitMQ)
+
+Bring up the stack
+```
+docker-compose up -d
+```
+
+In console 1
+```
+./generate_events.sh
+```
+
+In console 2
+```
+./listen_events.sh
+```
+
+
 ## Support
 
 * [Slack](https://slack.subzero.cloud/) — Watch announcements, share ideas and feedback
