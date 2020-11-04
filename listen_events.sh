@@ -20,7 +20,7 @@ trap clean_up SIGHUP SIGINT SIGTERM
 
 echo "starting even monitoring on redis, rabbitmq, press [CTRL+C] to stop.."
 docker run --network $NETWORK --name redis-monitor --rm redis:alpine \
-    redis-cli -h redis monitor  | awk '{print "[redis-monitor] " $0}'&
+    redis-cli -h redis -a pass monitor  | awk '{print "[redis-monitor] " $0}'&
 REDIS_MONITOR_PID=$!
 
 docker run --network $NETWORK --name rabbitmq-monitor --rm \

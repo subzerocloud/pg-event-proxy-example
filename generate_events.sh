@@ -25,9 +25,15 @@ i=0
 while true
 do
     message="message ${i}"
-    notify $pg "events" "${message}"
-    insert $pg "foo" "${message}"
+    # insert $pg "foo" "${message}" # this will be seein in amqp upstream due to wal2json binding
+    # notify $pg "amqpchannel" "${message}"
+    notify $pg "redischannel" "${message}"
+    # notify $pg "mqttchannel" "${message}"
+    # notify $pg "snschannel" "${message}"
+    # notify $pg "sqschannel" "${message}"
+    # notify $pg "lambdachannel" "${message}"
+    
     echo "Event (NOTIFY/INSERT): ${message}"
     ((i++))
-	sleep 5 # match development distribution delay
+	sleep 1 # match development distribution delay
 done

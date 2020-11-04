@@ -5,49 +5,74 @@ services:
   # amqp 0.9 (RabbitMQ)
   # mqtt (Apache ActiveMQ, Cassandana, HiveMQ, Mosquitto, RabbitMQ, AWS IoT, Amazon MQ, ...)
   # redis
+  # awslambda, awssqs, awssns
   pg_event_proxy:
     image: subzerocloud/pg-event-proxy-development
     # for production use the image below (you'll need a 'On Premise' subscription)
     # image: registry.subzero.cloud/pg-event-proxy
-    links:
+    depends_on:
       - postgres
       - rabbitmq
       - redis
       - mosquitto
+      - sqs-mock
+      - sns-mock
+
+    # configuration using a file
+    volumes:
+      - "./config_example.ini:/config.ini"
+    command: /usr/bin/pg-event-proxy /config.ini
+    
     environment:
-      - RUST_LOG=pg_event_proxy=debug # output forwarded messages, use "info" for production
-      - PGPROXY_LOCAL-POSTGRESQL_URI=postgres://user:pass@postgres:5432/app
-      # these configurations are only used when streaming WAL, the example below are the default values, uncomment only if you need to change them
-      # - PGPROXY_LOCAL-REPLICATION_SLOT=pg_event_proxy 
-      # - PGPROXY_LOCAL-WAL2JSON_PARAMS=\"format-version\" '2' , \"include-types\" '0'
+      - RUST_LOG=pg_event_proxy=info # output forwarded messages, use "debug" for more details
+      # these vars are used for AWS upstream
+      - AWS_ACCESS_KEY_ID=key
+      - AWS_SECRET_ACCESS_KEY=secret
+
+    #   # configuration using environment variables
+    #   - PGPROXY_DATABASE-URI=postgres://user:pass@postgres:5432/app
+    #   # these configurations are only used when streaming WAL, the example below are the default values, uncomment only if you need to change them
+    #   # - PGPROXY_DATABASE-REPLICATION_SLOT=pg_event_proxy 
+    #   # - PGPROXY_DATABASE-WAL2JSON_PARAMS=\"format-version\" '2' , \"include-types\" '0'
+
+    #   # Configuration for RabbitMQ upstream
+    #   - PGPROXY_UPSTREAM-MYAMQP-KIND=amqp
+    #   - PGPROXY_UPSTREAM-MYAMQP-URI=amqp://user:pass@rabbitmq//
+    #   # format of "BRIDGE_CHANNELS" config is as follows
+    #   # pgchannel1->exchange:topic_exchange_name, pgchannel2->queue:queue_name, pgchannel3->topic:topic_name
+    #   # "wal2json" has a special meaning when used as a value for pgchannel
+    #   # in this case the replication events (WAL) will be streamed (as opposed to events from NOTIFY wal2json, ... query)
+    #   # for example "wal2json->exchange:amqp.topic" will stream WAL to "amqp.topic" exchange
+    #   # when streaming WAL, the database user needs to have REPLICATION privilege (see db/src/authorization/roles.sql)
+    #   - PGPROXY_UPSTREAM-MYAMQP-BRIDGE_CHANNELS=amqpchannel->exchange:amq.topic
+
+    #   # Configuration for Redis upstream
+    #   - PGPROXY_UPSTREAM-MYREDIS-KIND=redis
+    #   - PGPROXY_UPSTREAM-MYREDIS-URI=redis://default:pass@redis
+    #   - PGPROXY_UPSTREAM-MYREDIS-BRIDGE_CHANNELS=redischannel->topic:events
+
+    #   # Configuration for MQTT upstream
+    #   - PGPROXY_UPSTREAM-MYMQTT-KIND=mqtt
+    #   - PGPROXY_UPSTREAM-MYMQTT-URI=mqtt://user:pass@mosquitto:1883 # schema can be mqtt (tcp), mqtts (ssl), ws, wss
+    #   - PGPROXY_UPSTREAM-MYMQTT-BRIDGE_CHANNELS=mqttchannel->topic:events
 
 
-      # format of "BRIDGE_CHANNELS" config is as follows
-      # pgchannel1->exchange:topic_exchange_name, pgchannel2->queue:queue_name, pgchannel3->topic:topic_name
-      # "wal2json" has a special meaning when used as a value for pgchannel
-      # in this case the replication events (WAL) will be streamed (as oposed to events from NOTIFY wal2json, ... query)
-      # for example "wal2json->exchange:amqp.topic" will stream WAL to "amqp.topic" exchange
-      # when streaming WAL, the database user needs to have REPLICATION privilege
-      
+    
 
-      # Configuration for RabbitMQ upstream
-      - PGPROXY_LOCAL-UPSTREAM=amqp
-      - PGPROXY_LOCAL-UPSTREAM_CONFIG-URI=amqp://user:pass@rabbitmq//
-      - PGPROXY_LOCAL-UPSTREAM_CONFIG-BRIDGE_CHANNELS=events->exchange:amq.topic, wal2json->exchange:amq.topic
-      - PGPROXY_LOCAL-UPSTREAM_CONFIG-DELIVERY_MODE=1 # message delivery mode, 1 = non-persistent, 2 = persistent
+    #   # Configuration for SNS upstream
+    #   - PGPROXY_UPSTREAM-MYSNS-KIND=awssns
+    #   - PGPROXY_UPSTREAM-MYSNS-URI=aws://sqs-mock:9911 # in production replace with aws://us-east-1 (i.e. the region id)
+    #   - PGPROXY_UPSTREAM-MYSNS-BRIDGE_CHANNELS=snschannel->topic:arn:aws:sns:eu-west-2:123450000001:test-topic
 
-      # Configuration for Redis upstream
-      # - PGPROXY_LOCAL-UPSTREAM=redis
-      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-URI=redis://redis:6379
-      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-BRIDGE_CHANNELS=events->topic:events, wal2json->topic:wal
+    #   # Configuration for SQS upstream
+    #   - PGPROXY_UPSTREAM-MYSQS-KIND=awssqs
+    #   - PGPROXY_UPSTREAM-MYSQS-URI=aws://sqs-mock:9911 # in production replace with aws://us-east-1 (i.e. the region id)
+    #   - PGPROXY_UPSTREAM-MYSQS-BRIDGE_CHANNELS=sqschannel->queue:default
 
-      # Configuration for Mqtt upstream
-      # - PGPROXY_LOCAL-UPSTREAM=mqtt
-      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-URI=tcp://mosquitto:1883
-      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-BRIDGE_CHANNELS=events->topic:events, wal2json->topic:wal
-      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-USERNAME=username
-      # - PGPROXY_LOCAL-UPSTREAM_CONFIG-PASSWORD=password
-      
+    #   # # Configuration for LAMBDA upstream
+    #   # - PGPROXY_UPSTREAM-MYLAMBDA-KIND=awslambda
+    #   # - PGPROXY_UPSTREAM-MYLAMBDA-URI=aws://us-east-1
+    #   # - PGPROXY_UPSTREAM-MYLAMBDA-BRIDGE_CHANNELS=lambdachannel->function:HelloWorldFunction
 
   postgres:
     image: subzerocloud/postgres_with_wal2json:12
@@ -59,6 +84,7 @@ services:
       - POSTGRES_DB=app
     volumes:
       - "./postgres:/docker-entrypoint-initdb.d"
+
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -67,12 +93,36 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=user
       - RABBITMQ_DEFAULT_PASS=pass
+
   redis:
     image: "redis:alpine"
     ports:
       - "6379:6379"
+    command: redis-server --appendonly yes --requirepass pass
+
   mosquitto:
     image: eclipse-mosquitto
     ports:
       - "1883:1883"
       - "9001:9001"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./mosquitto.pwd:/mosquitto/config/mosquitto.pwd
+
+  sqs-mock:
+    image: roribio16/alpine-sqs:latest
+    entrypoint: sh -c "/opt/sqs-init.sh && /opt/jdk/bin/java -Dconfig.file=/opt/config/elasticmq.conf -jar /opt/elasticmq-server.jar"
+    ports:
+      - "9324:9324"
+      - "9325:9325"
+
+  # sns has a topic configured to forward events to sqs-mock default queue
+  sns-mock:
+    image: s12v/sns
+    volumes:
+      - ./sns.conf:/etc/sns/db.json
+      - ./wait-for-tcp.sh:/wait-for-tcp.sh
+    command: /wait-for-tcp.sh sqs-mock 9324 -- java -jar /sns.jar
+    ports:
+      - "9911:9911"
+  

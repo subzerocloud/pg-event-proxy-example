@@ -14,54 +14,18 @@ Currently the supported upstreams are (others like lambda, sns, webhook planned)
 - amqp 0.9 (RabbitMQ)
 - mqtt (Apache ActiveMQ, Cassandana, HiveMQ, Mosquitto, RabbitMQ, AWS IoT, Amazon MQ, ...)
 - redis pubsub (Redis)
+- SNS (Amazon Simple Notification Service)
+- SQS (Amazon Simple Queue Service)
+- Lambda (AWS Lambda)
 
 This gives you a wide range of "destinations" for the database events
 
 ## Configuration
 
 Configuration is done through environment variables (useful in docker context) or a ini configuration file
-
-### Environment variables
-
-**Configuration for the event source (PostgreSql)**
-- `PGPROXY_LOCAL-POSTGRESQL_URI=postgresql://username:password@domain.tld:port/database`
-
-**these configurations are only used when streaming WAL**
-- `PGPROXY_LOCAL-REPLICATION_SLOT=my_replication_slot` (default `pg_event_proxy`)
-- `PGPROXY_LOCAL-WAL2JSON_PARAMS=\"format-version\" '2' , \"include-types\" '1'` (default `\"format-version\" '2' , \"include-types\" '0'`)
-
-**Configuration for the event destination (upstream)**
-
-Each upstream has a slightly different configuration but they all share the `BRIDGE_CHANNELS` configuration.
-The format of "BRIDGE_CHANNELS" config is as follows:
-
-```
-pgchannel1->exchange:topic_exchange_name, pgchannel2->queue:queue_name, pgchannel3->topic:topic_name, ...
-```
-
-`wal2json` has a special meaning when used as a value for pgchannel.
-In this case the replication events (WAL) will be streamed (as opposed to events from NOTIFY wal2json, ... query).
-For example `wal2json->exchange:amqp.topic` will stream WAL to "amqp.topic" exchange.
-When streaming WAL, the database user needs to have REPLICATION privileges
+See `docker-compose.yml` and `config_example.ini` for details
 
 
-**Configuration for RabbitMQ upstream**
-- `PGPROXY_LOCAL-UPSTREAM=amqp`
-- `PGPROXY_LOCAL-UPSTREAM_CONFIG-URI=amqp://user:pass@rabbitmq//`
-- `PGPROXY_LOCAL-UPSTREAM_CONFIG-BRIDGE_CHANNELS=events->exchange:amq.topic, wal2json->exchange:amq.topic`
-- `PGPROXY_LOCAL-UPSTREAM_CONFIG-DELIVERY_MODE=1` # message delivery mode, 1 = non-persistent, 2 = persistent
-
-**Configuration for Redis upstream**
-- `PGPROXY_LOCAL-UPSTREAM=redis`
-- `PGPROXY_LOCAL-UPSTREAM_CONFIG-URI=redis://redis:6379`
-- `PGPROXY_LOCAL-UPSTREAM_CONFIG-BRIDGE_CHANNELS=events->topic:events, wal2json->topic:wal`
-
-**Configuration for Mqtt upstream**
-- `PGPROXY_LOCAL-UPSTREAM=mqtt`
-- `PGPROXY_LOCAL-UPSTREAM_CONFIG-URI=tcp://mosquitto:1883`
-- `PGPROXY_LOCAL-UPSTREAM_CONFIG-BRIDGE_CHANNELS=events->topic:events, wal2json->topic:wal`
-- `PGPROXY_LOCAL-UPSTREAM_CONFIG-USERNAME=username`
-- `PGPROXY_LOCAL-UPSTREAM_CONFIG-PASSWORD=password`
 
 **Note:** It's recommended to always use the same name for postgresql channel and exchange/queue/topic in `BRIDGE_CHANNELS`, for example
 `app_events->topic:app_events, table_changes->topic:tables_changes` to make it easy to determine where the event originated
