@@ -19,9 +19,9 @@ services:
       - sns-mock
 
     # configuration using a file
-    volumes:
-      - "./config_example.ini:/config.ini"
-    command: /usr/bin/pg-event-proxy /config.ini
+    # volumes:
+    #   - "./config_example.ini:/config.ini"
+    # command: /usr/bin/pg-event-proxy /config.ini
     
     environment:
       - RUST_LOG=pg_event_proxy=info # output forwarded messages, use "debug" for more details
@@ -29,50 +29,50 @@ services:
       - AWS_ACCESS_KEY_ID=key
       - AWS_SECRET_ACCESS_KEY=secret
 
-    #   # configuration using environment variables
-    #   - PGPROXY_DATABASE-URI=postgres://user:pass@postgres:5432/app
-    #   # these configurations are only used when streaming WAL, the example below are the default values, uncomment only if you need to change them
-    #   # - PGPROXY_DATABASE-REPLICATION_SLOT=pg_event_proxy 
-    #   # - PGPROXY_DATABASE-WAL2JSON_PARAMS=\"format-version\" '2' , \"include-types\" '0'
+      # configuration using environment variables
+      - PGPROXY_DATABASE-URI=postgres://user:pass@postgres:5432/app
+      # these configurations are only used when streaming WAL, the example below are the default values, uncomment only if you need to change them
+      # - PGPROXY_DATABASE-REPLICATION_SLOT=pg_event_proxy 
+      # - PGPROXY_DATABASE-WAL2JSON_PARAMS=\"format-version\" '2' , \"include-types\" '0'
 
-    #   # Configuration for RabbitMQ upstream
-    #   - PGPROXY_UPSTREAM-MYAMQP-KIND=amqp
-    #   - PGPROXY_UPSTREAM-MYAMQP-URI=amqp://user:pass@rabbitmq//
-    #   # format of "BRIDGE_CHANNELS" config is as follows
-    #   # pgchannel1->exchange:topic_exchange_name, pgchannel2->queue:queue_name, pgchannel3->topic:topic_name
-    #   # "wal2json" has a special meaning when used as a value for pgchannel
-    #   # in this case the replication events (WAL) will be streamed (as opposed to events from NOTIFY wal2json, ... query)
-    #   # for example "wal2json->exchange:amqp.topic" will stream WAL to "amqp.topic" exchange
-    #   # when streaming WAL, the database user needs to have REPLICATION privilege (see db/src/authorization/roles.sql)
-    #   - PGPROXY_UPSTREAM-MYAMQP-BRIDGE_CHANNELS=amqpchannel->exchange:amq.topic
+      # Configuration for RabbitMQ upstream
+      - PGPROXY_UPSTREAM-MYAMQP-KIND=amqp
+      - PGPROXY_UPSTREAM-MYAMQP-URI=amqp://user:pass@rabbitmq//
+      # format of "BRIDGE_CHANNELS" config is as follows
+      # pgchannel1->exchange:topic_exchange_name, pgchannel2->queue:queue_name, pgchannel3->topic:topic_name
+      # "wal2json" has a special meaning when used as a value for pgchannel
+      # in this case the replication events (WAL) will be streamed (as opposed to events from NOTIFY wal2json, ... query)
+      # for example "wal2json->exchange:amqp.topic" will stream WAL to "amqp.topic" exchange
+      # when streaming WAL, the database user needs to have REPLICATION privilege (see db/src/authorization/roles.sql)
+      - PGPROXY_UPSTREAM-MYAMQP-BRIDGE_CHANNELS=amqpchannel->exchange:amq.topic
 
-    #   # Configuration for Redis upstream
-    #   - PGPROXY_UPSTREAM-MYREDIS-KIND=redis
-    #   - PGPROXY_UPSTREAM-MYREDIS-URI=redis://default:pass@redis
-    #   - PGPROXY_UPSTREAM-MYREDIS-BRIDGE_CHANNELS=redischannel->topic:events
+      # Configuration for Redis upstream
+      - PGPROXY_UPSTREAM-MYREDIS-KIND=redis
+      - PGPROXY_UPSTREAM-MYREDIS-URI=redis://default:pass@redis
+      - PGPROXY_UPSTREAM-MYREDIS-BRIDGE_CHANNELS=redischannel->topic:events
 
-    #   # Configuration for MQTT upstream
-    #   - PGPROXY_UPSTREAM-MYMQTT-KIND=mqtt
-    #   - PGPROXY_UPSTREAM-MYMQTT-URI=mqtt://user:pass@mosquitto:1883 # schema can be mqtt (tcp), mqtts (ssl), ws, wss
-    #   - PGPROXY_UPSTREAM-MYMQTT-BRIDGE_CHANNELS=mqttchannel->topic:events
+      # Configuration for MQTT upstream
+      - PGPROXY_UPSTREAM-MYMQTT-KIND=mqtt
+      - PGPROXY_UPSTREAM-MYMQTT-URI=mqtt://user:pass@mosquitto:1883 # schema can be mqtt (tcp), mqtts (ssl), ws, wss
+      - PGPROXY_UPSTREAM-MYMQTT-BRIDGE_CHANNELS=mqttchannel->topic:events
 
 
     
 
-    #   # Configuration for SNS upstream
-    #   - PGPROXY_UPSTREAM-MYSNS-KIND=awssns
-    #   - PGPROXY_UPSTREAM-MYSNS-URI=aws://sqs-mock:9911 # in production replace with aws://us-east-1 (i.e. the region id)
-    #   - PGPROXY_UPSTREAM-MYSNS-BRIDGE_CHANNELS=snschannel->topic:arn:aws:sns:eu-west-2:123450000001:test-topic
+      # Configuration for SNS upstream
+      - PGPROXY_UPSTREAM-MYSNS-KIND=awssns
+      - PGPROXY_UPSTREAM-MYSNS-URI=aws://sqs-mock:9911 # in production replace with aws://us-east-1 (i.e. the region id)
+      - PGPROXY_UPSTREAM-MYSNS-BRIDGE_CHANNELS=snschannel->topic:arn:aws:sns:eu-west-2:123450000001:test-topic
 
-    #   # Configuration for SQS upstream
-    #   - PGPROXY_UPSTREAM-MYSQS-KIND=awssqs
-    #   - PGPROXY_UPSTREAM-MYSQS-URI=aws://sqs-mock:9911 # in production replace with aws://us-east-1 (i.e. the region id)
-    #   - PGPROXY_UPSTREAM-MYSQS-BRIDGE_CHANNELS=sqschannel->queue:default
+      # Configuration for SQS upstream
+      - PGPROXY_UPSTREAM-MYSQS-KIND=awssqs
+      - PGPROXY_UPSTREAM-MYSQS-URI=aws://sqs-mock:9911 # in production replace with aws://us-east-1 (i.e. the region id)
+      - PGPROXY_UPSTREAM-MYSQS-BRIDGE_CHANNELS=sqschannel->queue:default
 
-    #   # # Configuration for LAMBDA upstream
-    #   # - PGPROXY_UPSTREAM-MYLAMBDA-KIND=awslambda
-    #   # - PGPROXY_UPSTREAM-MYLAMBDA-URI=aws://us-east-1
-    #   # - PGPROXY_UPSTREAM-MYLAMBDA-BRIDGE_CHANNELS=lambdachannel->function:HelloWorldFunction
+      # # Configuration for LAMBDA upstream
+      # - PGPROXY_UPSTREAM-MYLAMBDA-KIND=awslambda
+      # - PGPROXY_UPSTREAM-MYLAMBDA-URI=aws://us-east-1
+      # - PGPROXY_UPSTREAM-MYLAMBDA-BRIDGE_CHANNELS=lambdachannel->function:HelloWorldFunction
 
   postgres:
     image: subzerocloud/postgres_with_wal2json:12
