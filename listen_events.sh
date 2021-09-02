@@ -18,9 +18,9 @@ function clean_up {
 trap clean_up SIGHUP SIGINT SIGTERM
 
 
-echo "starting even monitoring on redis, rabbitmq, press [CTRL+C] to stop.."
+echo "starting even monitoring on redis, rabbitmq, mqtt. Press [CTRL+C] to stop..."
 docker run --network $NETWORK --name redis-monitor --rm redis:alpine \
-    redis-cli -h redis -a pass monitor  | awk '{print "[redis-monitor] " $0}'&
+    redis-cli -h redis -a pass monitor  | awk -vFPAT='([^ ]*)|("[^"]+")' -vOFS=, '{print "[redis-monitor] " $6}'&
 REDIS_MONITOR_PID=$!
 
 docker run --network $NETWORK --name rabbitmq-monitor --rm \
@@ -36,8 +36,8 @@ RABBITMQ_MONITOR_PID=$!
 docker run --network $NETWORK --name mosquitto-monitor --rm \
       eclipse-mosquitto \
       /usr/bin/mosquitto_sub \
-      -h mosquitto -p 1883 \
-      -t '#' -d  | awk '{print "[mosquitto-monitor] " $0}'&
+      -h mosquitto -p 1883 -u user -P pass \
+      --topic 'events' | awk '{print "[mosquitto-monitor] " $0}'&
 MOSQUITTO_MONITOR_PID=$!
 
 

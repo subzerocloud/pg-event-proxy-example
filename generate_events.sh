@@ -6,7 +6,7 @@ function notify () {
     local channel=$2
     local message=$3
     local query="select events.send_message('${channel}', '${message}', '', true)"
-    psql -q -c "${query}" "${pguri}"
+    psql -q -c "${query}" "${pguri}" > /dev/null
 }
 
 function insert () {
@@ -15,7 +15,7 @@ function insert () {
     local columns=name
     local message=$3
     local query="insert into ${table} ($columns) values ('$message')"
-    psql -q -c "${query}" "${pguri}"
+    psql -q -c "${query}" "${pguri}" > /dev/null
 }
 
 
@@ -26,12 +26,12 @@ while true
 do
     message="message ${i}"
     # insert $pg "foo" "${message}" # this will be seein in amqp upstream due to wal2json binding
-    # notify $pg "amqpchannel" "${message}"
+    notify $pg "amqpchannel" "${message}"
     notify $pg "redischannel" "${message}"
-    # notify $pg "mqttchannel" "${message}"
-    # notify $pg "snschannel" "${message}"
-    # notify $pg "sqschannel" "${message}"
-    # notify $pg "lambdachannel" "${message}"
+    notify $pg "mqttchannel" "${message}"
+    notify $pg "snschannel" "${message}"
+    notify $pg "sqschannel" "${message}"
+    notify $pg "lambdachannel" "${message}"
     
     echo "Event (NOTIFY/INSERT): ${message}"
     ((i++))

@@ -7,6 +7,7 @@ services:
   # redis
   # awslambda, awssqs, awssns
   pg_event_proxy:
+    container_name: pg_event_proxy
     image: subzerocloud/pg-event-proxy-development
     # for production use the image below (you'll need a 'On Premise' subscription)
     # image: registry.subzero.cloud/pg-event-proxy
@@ -101,7 +102,7 @@ services:
     command: redis-server --appendonly yes --requirepass pass
 
   mosquitto:
-    image: eclipse-mosquitto
+    image: eclipse-mosquitto:1.6
     ports:
       - "1883:1883"
       - "9001:9001"

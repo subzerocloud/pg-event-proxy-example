@@ -10,7 +10,7 @@ This tool enables a decoupled architecture, think sending emails when a user sig
 The larger goal is to enable the development of backends around [PostgREST](https://postgrest.com)/[subZero](https://subzero.cloud/) philosophy.
 Check out the [PostgREST Starter Kit](https://github.com/subzerocloud/postgrest-starter-kit)/[subZero Starter Kit](https://github.com/subzerocloud/subzero-starter-kit) to see how `pg-event-proxy` fits in a larger project.
 
-Currently the supported upstreams are (others like lambda, sns, webhook planned)
+Currently the supported upstreams
 - amqp 0.9 (RabbitMQ)
 - mqtt (Apache ActiveMQ, Cassandana, HiveMQ, Mosquitto, RabbitMQ, AWS IoT, Amazon MQ, ...)
 - redis pubsub (Redis)
@@ -52,7 +52,6 @@ select events.send_message('pgchannel1', 'My message', 'routing-key', true)
 ```
 
 ## See it in action
-Open `docker-compose.yml` file and uncomment the desired upstream (by default it's configured to send events to RabbitMQ)
 
 Bring up the stack
 ```
